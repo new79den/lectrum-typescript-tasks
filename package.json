@@ -1,0 +1,22 @@
+{
+  "name": "home-work",
+  "version": "1.0.0",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "yarn compile && yarn execute",
+    "build": "babel --out-file bundle.js main.ts",
+    "compile": "tsc main.ts",
+    "execute": "node main.js"
+  },
+  "devDependencies": {
+    "typescript": "^3.8.2"
+  },
+  "dependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.4",
+    "@babel/preset-typescript": "^7.8.3"
+  },
+  "repository": "https://github.com/new79den/lectrum-typescript-tasks.git",
+  "author": "denis.korniychuk <new79den@gmail.com>"
+}
