@@ -1,12 +1,12 @@
 {
   "name": "home-work",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "homework_1.ts.js",
   "license": "MIT",
   "scripts": {
     "start": "yarn compile && yarn execute",
-    "build": "babel --out-file bundle.js main.ts",
-    "compile": "tsc main.ts",
+    "build": "babel --out-file bundle.js homework_1.ts",
+    "compile": "tsc homework_1.ts",
     "execute": "node main.js"
   },
   "devDependencies": {

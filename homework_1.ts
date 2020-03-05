@@ -1,12 +1,13 @@
+
 interface i_defaults {
-    readonly symbol: string,
-    readonly separator: string,
-    readonly decimal: string,
-    readonly formatWithSymbol: boolean,
-    readonly errorOnInvalid: boolean,
-    readonly precision: number,
-    readonly pattern: string,
-    readonly negativePattern: string,
+     symbol: string,
+     separator: string,
+     decimal: string,
+     formatWithSymbol: boolean,
+     errorOnInvalid: boolean,
+     precision: number,
+     pattern: string,
+     negativePattern: string
 }
 
 const defaults: i_defaults = {
@@ -20,14 +21,29 @@ const defaults: i_defaults = {
     negativePattern: '-!#'
 };
 
-type FType_round = (v: number) => number;
-const round: FType_round = (v) => Math.round(v);
+interface i_opts {
+    symbol?: string,
+    separator?: string,
+    decimal?: string,
+    formatWithSymbol?: boolean,
+    errorOnInvalid?: boolean,
+    precision?: number,
+    pattern?: string,
+    negativePattern?: string,
+    increment?: number,
+    useVedic?: RegExp,
+    groups?: RegExp,
+}
 
-type FType_pow = (p: number) => number;
-const pow: FType_pow = (p) => Math.pow(10, p);
+type t_round = (v: number) => number;
+const round: t_round = v => Math.round(v);
 
-type FType_rounding = ({value, increment}:{value: number, increment: number}) => number;
-const rounding: FType_rounding = ({value, increment}) => round(value / increment) * increment;
+type t_pow = (p: number) => number;
+const pow: t_pow = p => Math.pow(10, p);
+
+type t_rounding = (value: number, increment: number) => number;
+const rounding: t_rounding = (value, increment) => round(value / increment) * increment;
+
 
 const groupRegex: RegExp = /(\d)(?=(\d{3})+\b)/g;
 const vedicRegex: RegExp = /(\d)(?=(\d\d)+\d\b)/g;
@@ -37,16 +53,39 @@ const vedicRegex: RegExp = /(\d)(?=(\d\d)+\d\b)/g;
  * @param {number|string|currency} value
  * @param {object} [opts]
  */
-function currency(value, opts) {
+
+interface i_currency {
+    intValue: number,
+    value: number,
+    _settings: any,
+    _precision: any,
+    add(number: number): any, // ?
+    subtract(number:number): any, // ?
+    multiply(number: number): any, // ?
+    divide(number: number): any, //?
+    distribute(count: number),
+    dollars(): number,
+    cents(): number,
+    format(useSymbol: boolean): string,
+    toString(): string,
+    toJSON(): number
+}
+
+interface i_currencyConstructor {
+    new (value, opts: i_opts): i_currency,
+    prototype: i_currency,
+}
+
+const currency = function (value: number | HTMLInputElement, opts: i_opts) {
     let that = this;
 
     if(!(that instanceof currency)) {
         return new currency(value, opts);
     }
 
-    let settings = Object.assign({}, defaults, opts)
-        , precision = pow(settings.precision)
-        , v = parse(value, settings);
+    let settings: i_opts = (<any>Object).assign({}, defaults, opts)
+        , precision: number = pow(settings.precision)
+        , v: number = parse(value, settings);
 
     that.intValue = v;
     that.value = v / precision;
@@ -65,16 +104,19 @@ function currency(value, opts) {
     // Intended for internal usage only - subject to change
     this._settings = settings;
     this._precision = precision;
-}
+} as Function as i_currencyConstructor;
 
-function parse(value, opts, useRounding = true) {
-    let v = 0
-        , { decimal, errorOnInvalid, precision: decimals } = opts
-        , precision = pow(decimals)
-        , isNumber = typeof value === 'number';
+
+
+type t_value = number | string | HTMLInputElement; // ??? не понял что с ним делать
+function parse(value: t_value, opts: i_opts , useRounding:boolean = true) : number {
+    let v:number = 0
+        , { decimal, errorOnInvalid, precision: decimals }: i_opts = opts
+        , precision: number = pow(decimals)
+        , isNumber: boolean = typeof value === 'number';
 
     if (isNumber || value instanceof currency) {
-        v = ((isNumber ? value : value.value) * precision);
+        v = ((isNumber ? value : value.value ) * precision);
     } else if (typeof value === 'string') {
         let regex = new RegExp('[^-\\d' + decimal + ']', 'g')
             , decimalString = new RegExp('\\' + decimal, 'g');
@@ -104,7 +146,7 @@ currency.prototype = {
      * @param {number} number
      * @returns {currency}
      */
-    add(number: number):number {
+    add(number) {
         let { intValue, _settings, _precision } = this;
         return currency((intValue += parse(number, _settings)) / _precision, _settings);
     },
@@ -147,12 +189,12 @@ currency.prototype = {
      */
     distribute(count) {
         let { intValue, _precision, _settings } = this
-            , distribution = []
-            , split = Math[intValue >= 0 ? 'floor' : 'ceil'](intValue / count)
-            , pennies = Math.abs(intValue - (split * count));
+            , distribution: Array<i_currency> = []
+            , split: number = Math[intValue >= 0 ? 'floor' : 'ceil'](intValue / count)
+            , pennies: number = Math.abs(intValue - (split * count));
 
         for (; count !== 0; count--) {
-            let item = currency(split / _precision, _settings);
+            let item: i_currency = new currency(split / _precision, _settings);
 
             // Add any left over pennies
             pennies-- > 0 && (item = intValue >= 0 ? item.add(1 / _precision) : item.subtract(1 / _precision));
@@ -167,7 +209,7 @@ currency.prototype = {
      * Returns the dollar value.
      * @returns {number}
      */
-    dollars():number {
+    dollars() {
         return ~~this.value;
     },
 
@@ -175,7 +217,7 @@ currency.prototype = {
      * Returns the cent value.
      * @returns {number}
      */
-    cents():number {
+    cents() {
         let { intValue, _precision } = this;
         return ~~(intValue % _precision);
     },
@@ -185,11 +227,11 @@ currency.prototype = {
      * @param {boolean} useSymbol - format with currency symbol
      * @returns {string}
      */
-    format(useSymbol: boolean): string {
+    format(useSymbol) {
         let { pattern, negativePattern, formatWithSymbol, symbol, separator, decimal, groups } = this._settings
-            , values = (this + '').replace(/^-/, '').split('.')
-            , dollars = values[0]
-            , cents = values[1];
+            , values: Array<string> = (this + '').replace(/^-/, '').split('.')
+            , dollars: string = values[0]
+            , cents: string = values[1];
 
         // set symbol formatting
         typeof(useSymbol) === 'undefined' && (useSymbol = formatWithSymbol);
@@ -203,7 +245,7 @@ currency.prototype = {
      * Formats the value as a string according to the formatting settings.
      * @returns {string}
      */
-    toString():string {
+    toString() {
         let { intValue, _precision, _settings } = this;
         return rounding(intValue / _precision, _settings.increment).toFixed(_settings.precision);
     },
@@ -212,7 +254,7 @@ currency.prototype = {
      * Value for JSON serialization.
      * @returns {float}
      */
-    toJSON(): number {
+    toJSON() {
         return this.value;
     }
 
