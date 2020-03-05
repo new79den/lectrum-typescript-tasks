@@ -55,14 +55,14 @@ const vedicRegex: RegExp = /(\d)(?=(\d\d)+\d\b)/g;
  */
 
 interface i_currency {
-    intValue: number,
-    value: number,
-    _settings: any,
-    _precision: any,
-    add(number: number): any, // ?
-    subtract(number:number): any, // ?
-    multiply(number: number): any, // ?
-    divide(number: number): any, //?
+    intValue?: number,
+    value?: number,
+    _settings?: any,
+    _precision?: any,
+    add(number: number),
+    subtract(number:number),
+    multiply(number: number),
+    divide(number: number),
     distribute(count: number),
     dollars(): number,
     cents(): number,
@@ -155,7 +155,7 @@ currency.prototype = {
      */
     add(number) {
         let { intValue, _settings, _precision } = this;
-        return currency((intValue += parse(number, _settings)) / _precision, _settings);
+        return new currency((intValue += parse(number, _settings)) / _precision, _settings);
     },
 
     /**
@@ -165,7 +165,7 @@ currency.prototype = {
      */
     subtract(number) {
         let { intValue, _settings, _precision } = this;
-        return currency((intValue -= parse(number, _settings)) / _precision, _settings);
+        return new currency((intValue -= parse(number, _settings)) / _precision, _settings);
     },
 
     /**
@@ -175,7 +175,7 @@ currency.prototype = {
      */
     multiply(number) {
         let { intValue, _settings } = this;
-        return currency((intValue *= number) / pow(_settings.precision), _settings);
+        return new currency((intValue *= number) / pow(_settings.precision), _settings);
     },
 
     /**
@@ -185,7 +185,7 @@ currency.prototype = {
      */
     divide(number) {
         let { intValue, _settings } = this;
-        return currency(intValue /= parse(number, _settings, false), _settings);
+        return new currency(intValue /= parse(number, _settings, false), _settings);
     },
 
     /**
