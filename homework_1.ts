@@ -108,7 +108,8 @@ const currency = function (value: number | HTMLInputElement, opts: i_opts) {
 
 
 
-type t_value = number | string | HTMLInputElement; // ??? не понял что с ним делать
+type t_value = number | string | HTMLInputElement;
+
 function parse(value: t_value, opts: i_opts , useRounding:boolean = true) : number {
     let v:number = 0
         , { decimal, errorOnInvalid, precision: decimals }: i_opts = opts
@@ -116,14 +117,21 @@ function parse(value: t_value, opts: i_opts , useRounding:boolean = true) : numb
         , isNumber: boolean = typeof value === 'number';
 
     if (isNumber || value instanceof currency) {
-        v = ((isNumber ? value : value.value ) * precision);
+
+        if (value instanceof HTMLInputElement) {
+            value = value.value
+        }
+        v = +value * precision;
+
     } else if (typeof value === 'string') {
+
         let regex = new RegExp('[^-\\d' + decimal + ']', 'g')
             , decimalString = new RegExp('\\' + decimal, 'g');
-        v = value
+
+        v = +(value
                 .replace(/\((.*)\)/, '-$1')   // allow negative e.g. (1.99)
                 .replace(regex, '')           // replace any non numeric values
-                .replace(decimalString, '.')  // convert any decimal values
+                .replace(decimalString, '.'))  // convert any decimal values
             * precision;                  // scale number to integer value
         v = v || 0;
     } else {
@@ -134,13 +142,12 @@ function parse(value: t_value, opts: i_opts , useRounding:boolean = true) : numb
     }
 
     // Handle additional decimal for proper rounding.
-    v = v.toFixed(4);
+    v = +v.toFixed(4);
 
     return useRounding ? round(v) : v;
 }
 
 currency.prototype = {
-
     /**
      * Adds values together.
      * @param {number} number
